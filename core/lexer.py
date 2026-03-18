@@ -42,7 +42,10 @@ class KalKylLexer:
             if kind == 'SKIP':
                 continue
             elif kind == 'MISMATCH':
-                narratives.append(f"[LEXER] FATAL ERROR: Unknown symbol '{value}' detected.")
+                if value == '"':
+                    narratives.append('[LEXER] FATAL ERROR: Identified raw string "\"". Strings must be prefixed with m*wort (e.g., 5*wort).')
+                else:
+                    narratives.append(f"[LEXER] FATAL ERROR: Unknown symbol '{value}' detected.")
                 return tokens, narratives, "FAIL"
             
             # Special Handling: Dimensional String Validation 
