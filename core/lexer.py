@@ -23,6 +23,8 @@ class KalKylLexer:
             ('OP_MATH',       r'[+\-*/]'),
             ('OP_REL',        r'==|!=|>=|<=|>|<'),
             ('SEP_COMMA',     r','),
+            ('PAREN_OPEN',   r'\('),
+            ('PAREN_CLOSE',  r'\)'),
             ('SKIP',          r'[ \t\n]+'),
             ('MISMATCH',      r'.'),
         ]
@@ -51,6 +53,8 @@ class KalKylLexer:
             'OP_MATH':       'MATH_OPERATOR',
             'OP_REL':        'RELATIONAL_OPERATOR',
             'SEP_COMMA':     'SEPARATOR',
+            'PAREN_OPEN':    'PAREN_OPEN',
+            'PAREN_CLOSE':   'PAREN_CLOSE',
             'TYPE_DIM': 'DIMENSIONAL_TYPE'
         }
         return labels.get(kind, kind)
@@ -58,7 +62,8 @@ class KalKylLexer:
     def tokenize(self, code):
         tokens = []
         narratives = []
-        raw_string_warning = None 
+        raw_string_warning = None
+        panic_count = 0  # symbols skipped by Panic Mode
 
         # Guard: empty or blank input
         if not code or not code.strip():
@@ -73,8 +78,13 @@ class KalKylLexer:
                 continue
 
             elif kind == 'MISMATCH':
-                narratives.append(f"[LEXER] FATAL ERROR: Unknown symbol '{value}' detected. Operation halted at index {mo.start()}.")
-                return tokens, narratives, "FAIL"
+                # PANIC MODE RECOVERY: discard bad symbol, resume scanning
+                panic_count += 1
+                narratives.append(
+                    f"[LEXER] WARNING: Unknown symbol '{value}' detected at index {mo.start()}. "
+                    f"[RECOVERY] Panic Mode engaged: symbol discarded, scanning resumed."
+                )
+                continue
 
             elif kind == 'RAW_STR':
                 # TC3: warn but continue tokenizing — let semantics issue the FATAL
@@ -96,14 +106,22 @@ class KalKylLexer:
 
             tokens.append({'type': kind, 'value': value})
 
-        if not code.endswith(']'):
-            narratives.append("[LEXER] FATAL ERROR: Identified missing Delimiter ']'.")
-            return tokens, narratives, "FAIL"
+        # PHRASE-LEVEL RECOVERY: auto-insert missing ']'
+        if not code.rstrip().endswith(']'):
+            narratives.append(
+                "[LEXER] WARNING: Missing Delimiter ']' detected. "
+                "[RECOVERY] Phrase-Level Recovery: Inserting ']' to restore statement boundary."
+            )
+            tokens.append({'type': 'BRACKET_CLOSE', 'value': ']'})
 
-        # TC3: append warning AFTER all tokens scanned, matching expected narrative format
+        # Build final scan summary
+        base_msg = f"[LEXER] Successfully scanned {len(tokens)} tokens."
+        if panic_count > 0:
+            base_msg += f" [RECOVERY] {panic_count} unknown symbol(s) recovered via Panic Mode."
+
         if raw_string_warning:
-            narratives.append(f"[LEXER] Successfully scanned {len(tokens)} tokens. {raw_string_warning}")
+            narratives.append(f"{base_msg} {raw_string_warning}")
         else:
-            narratives.append(f"[LEXER] Successfully scanned {len(tokens)} tokens.")
+            narratives.append(base_msg)
 
         return tokens, narratives, "PASS"

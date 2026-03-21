@@ -308,7 +308,7 @@ class KalKylSemantics:
         """
         has_float   = any(t['type'] == 'FLOAT_LIT' for t in expr_tokens)
         has_int     = any(t['type'] == 'NUM_LIT' for t in expr_tokens)
-        has_bool    = any(t['type'] == 'BOOL' for t in expr_tokens)
+        has_bool    = any(t['type'] == 'BOOL' and t['value'] != 'leer' for t in expr_tokens)
         has_str     = any(t['type'] in ('STR_LIT', 'TYPE_DIM') for t in expr_tokens)
         has_div     = any(t['type'] == 'OP_MATH' and t['value'] == '/' for t in expr_tokens)
         has_logic   = any(t['type'] == 'OP_LOGIC' for t in expr_tokens)
@@ -377,25 +377,27 @@ class KalKylSemantics:
 
     def _register_literals(self, expr_tokens, symbol_table, narratives):
         """
-        Register numeric literals as anonymous V_lit_ entries.
+        Register numeric literals as anonymous V_internal_ entries.
         Mirrors Plankalkül's physical memory model — every value occupies a slot.
         Counter is persistent across statements.
         """
         for t in expr_tokens:
             if t['type'] == 'NUM_LIT':
-                lit_name = f"V_lit_{t['value']}"
+                lit_name = f"V_internal_{self.internal_counter}"
                 if not symbol_table.exists(lit_name):
                     entry = symbol_table.bind(lit_name, 'zahl')
                     narratives.append(
                         f"[SEMANTICS] Registered literal {t['value']} "
                         f"as {lit_name} (zahl) at offset {entry['offset']}."
                     )
+                    self.internal_counter += 1
 
             elif t['type'] == 'FLOAT_LIT':
-                lit_name = f"V_lit_{t['value'].replace('.', '_')}"
+                lit_name = f"V_internal_{self.internal_counter}"
                 if not symbol_table.exists(lit_name):
                     entry = symbol_table.bind(lit_name, 'gleitkomma')
                     narratives.append(
                         f"[SEMANTICS] Registered literal {t['value']} "
                         f"as {lit_name} (gleitkomma) at offset {entry['offset']}."
                     )
+                    self.internal_counter += 1

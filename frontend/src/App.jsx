@@ -1,4 +1,5 @@
 import { Suspense, useState, useCallback, useEffect } from 'react'
+import { KalKylPanel } from './KalKylPanel'
 import { Canvas, useThree } from '@react-three/fiber'
 import { PointerLockControls, AdaptiveDpr } from '@react-three/drei'
 import { Model } from './Model'
@@ -27,6 +28,7 @@ const DEFAULT_DEBUG = {
 
 function App() {
   const [debugVisible, setDebugVisible] = useState(false)
+  const [panelVisible, setPanelVisible] = useState(false)
   const [debugInfo, setDebugInfo] = useState(DEFAULT_DEBUG)
   const [crosshairInfo, setCrosshairInfo] = useState({ hit: false })
 
@@ -35,6 +37,10 @@ function App() {
       if (e.ctrlKey && e.altKey && e.key === 'n') {
         e.preventDefault()
         setDebugVisible(v => !v)
+      }
+      if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault()
+        setPanelVisible(v => !v)
       }
     }
     window.addEventListener('keydown', handler)
@@ -70,6 +76,7 @@ function App() {
 
       <Crosshair />
       {debugVisible && <DebugOverlay info={debugInfo} crosshair={crosshairInfo} />}
+      {panelVisible && <KalKylPanel onClose={() => setPanelVisible(false)} />}
     </>
   )
 }

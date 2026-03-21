@@ -28,7 +28,7 @@ def run(label, input_text, expected_status):
             print(f"  {n}")
         result = "FAIL"
     else:
-        parse_narratives, parse_status = parser.parse(tokens)
+        parse_narratives, parse_status, _ = parser.parse(tokens)
         print(f"Lex     : {lex_status}")
         print(f"Parse   : {parse_status}")
         print("Narratives:")
@@ -38,7 +38,7 @@ def run(label, input_text, expected_status):
             print(f"  {n}")
         result = parse_status
 
-    match = "✓ PASS" if result == expected_status else "✗ FAIL — unexpected result"
+    match = "PASS" if result == expected_status else "FAIL -- unexpected result"
     print(f"Result  : {match}")
 
 
@@ -53,9 +53,9 @@ run(
 )
 
 run(
-    "TC2 — Syntax Error: Missing Initiator",
+    "TC2 — Phrase-Level Recovery: Missing '[' auto-inserted by parser",
     "100 => zahl Z_1 ]",
-    "FAIL"
+    "PASS"
 )
 
 run(
@@ -65,9 +65,9 @@ run(
 )
 
 run(
-    "TC4 — Lexical Error: Unknown Symbol",
+    "TC4 — Panic Mode Recovery: Unknown symbol '$' discarded, scanning resumed",
     "[ 10 $ 5 => zahl Z_1 ]",
-    "FAIL"
+    "PASS"
 )
 
 # =============================================================================

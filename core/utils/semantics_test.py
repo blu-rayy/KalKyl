@@ -63,7 +63,7 @@ def run(label, input_text, expected_status, fresh_table=True, symbol_table=None)
             print(st.display())
             result = sem_status
 
-    match = "✓ PASS" if result == expected_status else "✗ FAIL — unexpected result"
+    match = "PASS" if result == expected_status else "FAIL -- unexpected result"
     print(f"\nResult  : {match}")
     return st
 
@@ -79,9 +79,9 @@ run(
 )
 
 run(
-    "TC2 — Syntax Error: Missing Initiator (pipeline stops at parser)",
+    "TC2 — Phrase-Level Recovery: Missing '[' auto-inserted by parser",
     "100 => zahl Z_1 ]",
-    "FAIL"
+    "PASS"
 )
 
 run(
@@ -91,9 +91,9 @@ run(
 )
 
 run(
-    "TC4 — Lexical Error: Unknown Symbol (pipeline stops at lexer)",
+    "TC4 — Panic Mode Recovery: Unknown symbol '$' discarded, scanning resumed",
     "[ 10 $ 5 => zahl Z_1 ]",
-    "FAIL"
+    "PASS"
 )
 
 # =============================================================================
@@ -383,4 +383,4 @@ _, status2, st_persist = semantic_persist.analyze(tokens2, rule2, st_persist)
 print(f"\nSecond statement status: {status2}")
 print("Symbol table after second statement:")
 print(st_persist.display())
-print(f"\nResult  : {'✓ PASS' if status2 == 'PASS' else '✗ FAIL — unexpected result'}")
+print(f"\nResult  : {'PASS' if status2 == 'PASS' else 'FAIL -- unexpected result'}")
