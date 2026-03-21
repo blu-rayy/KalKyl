@@ -1,119 +1,65 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { Suspense, useState, useCallback, useEffect } from 'react'
+import { Canvas, useThree } from '@react-three/fiber'
+import { PointerLockControls, AdaptiveDpr } from '@react-three/drei'
+import { Model } from './Model'
+import { DebugTracker, DebugOverlay } from './DebugHUD'
+
+const DEG = Math.PI / 180
+
+function CameraInit() {
+  const { camera } = useThree()
+  useEffect(() => {
+    camera.rotation.set(-176.4 * DEG, 0.9 * DEG, 179.9 * DEG)
+  }, [camera])
+  return null
+}
+
+const DEFAULT_DEBUG = {
+  pos:  { x: '8.80',  y: '98.93', z: '-82.78' },
+  rot:  { x: '0.0',   y: '0.0',   z: '0.0' },
+  dir:  { x: '0.00',  y: '0.00',  z: '-1.00' },
+  fov:  '50.0',
+  locked: false,
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [debugVisible, setDebugVisible] = useState(false)
+  const [debugInfo, setDebugInfo] = useState(DEFAULT_DEBUG)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.ctrlKey && e.altKey && e.key === 'n') {
+        e.preventDefault()
+        setDebugVisible(v => !v)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  const handleDebugUpdate = useCallback((info) => setDebugInfo(info), [])
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      <Canvas
+        camera={{ position: [8.80, 98.93, -82.78], fov: 50 }}
+        style={{ width: '100vw', height: '100vh', display: 'block' }}
+        dpr={[1, 1.5]}
+        performance={{ min: 0.5 }}
+        gl={{ antialias: false, powerPreference: 'high-performance' }}
+      >
+        <ambientLight intensity={1.5} />
+        <directionalLight position={[5, 5, 5]} intensity={1} />
+        <Suspense fallback={null}>
+          <Model path="/retro_room.glb" />
+        </Suspense>
+        <AdaptiveDpr pixelated />
+        <CameraInit />
+        {debugVisible && <DebugTracker onUpdate={handleDebugUpdate} />}
+        <PointerLockControls />
+      </Canvas>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      {debugVisible && <DebugOverlay info={debugInfo} />}
     </>
   )
 }
