@@ -2,7 +2,10 @@ import { Suspense, useState, useCallback, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { PointerLockControls, AdaptiveDpr } from '@react-three/drei'
 import { Model } from './Model'
-import { DebugTracker, DebugOverlay } from './DebugHUD'
+import { DebugTracker, DebugOverlay, DebugMovement, Crosshair } from './DebugHUD'
+import { StageLight } from './StageLight'
+import { DustParticles } from './DustParticles'
+import { HoverLight } from './HoverLight'
 
 const DEG = Math.PI / 180
 
@@ -25,6 +28,7 @@ const DEFAULT_DEBUG = {
 function App() {
   const [debugVisible, setDebugVisible] = useState(false)
   const [debugInfo, setDebugInfo] = useState(DEFAULT_DEBUG)
+  const [crosshairInfo, setCrosshairInfo] = useState({ hit: false })
 
   useEffect(() => {
     const handler = (e) => {
@@ -38,6 +42,7 @@ function App() {
   }, [])
 
   const handleDebugUpdate = useCallback((info) => setDebugInfo(info), [])
+  const handleCrosshairUpdate = useCallback((info) => setCrosshairInfo(info), [])
 
   return (
     <>
@@ -48,18 +53,23 @@ function App() {
         performance={{ min: 0.5 }}
         gl={{ antialias: false, powerPreference: 'high-performance' }}
       >
-        <ambientLight intensity={1.5} />
-        <directionalLight position={[5, 5, 5]} intensity={1} />
+        <ambientLight intensity={0.04} />
         <Suspense fallback={null}>
           <Model path="/retro_room.glb" />
         </Suspense>
+        <StageLight position={[8.65, 155, 8.65]} targetPos={[8.65, 95, 8.65]} angle={0.85} intensity={8000} penumbra={0.9} />
+        <HoverLight hitCenter={[58.49, 105, -13.71]} hitRadius={15} position={[33.42, 130, -60.11]} targetPos={[58.63, 103.62, -13.78]} maxIntensity={8000} angle={0.3} penumbra={0.8} distance={150} color="#ffe8c0" />
+        <HoverLight hitCenter={[-33.15, 82.58, 11.74]} hitRadius={15} position={[-33.15, 150, 11.74]} targetPos={[-33.15, 82.58, 11.74]} maxIntensity={8000} angle={0.4} penumbra={0.8} distance={150} color="#ffe8c0" />
+        <DustParticles position={[8.65, 88, 8.65]} />
         <AdaptiveDpr pixelated />
         <CameraInit />
-        {debugVisible && <DebugTracker onUpdate={handleDebugUpdate} />}
+        {debugVisible && <DebugTracker onUpdate={handleDebugUpdate} onCrosshairUpdate={handleCrosshairUpdate} />}
+        {debugVisible && <DebugMovement />}
         <PointerLockControls />
       </Canvas>
 
-      {debugVisible && <DebugOverlay info={debugInfo} />}
+      <Crosshair />
+      {debugVisible && <DebugOverlay info={debugInfo} crosshair={crosshairInfo} />}
     </>
   )
 }
