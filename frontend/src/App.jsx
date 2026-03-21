@@ -1,5 +1,6 @@
 import { Suspense, useState, useCallback, useEffect } from 'react'
 import { KalKylPanel } from './KalKylPanel'
+import { ScreenDisplay } from './ScreenDisplay'
 import { Canvas, useThree } from '@react-three/fiber'
 import { PointerLockControls, AdaptiveDpr } from '@react-three/drei'
 import { Model } from './Model'
@@ -13,13 +14,13 @@ const DEG = Math.PI / 180
 function CameraInit() {
   const { camera } = useThree()
   useEffect(() => {
-    camera.rotation.set(-176.4 * DEG, 0.9 * DEG, 179.9 * DEG)
+    camera.rotation.set(-175.6 * DEG, 0.8 * DEG, 179.9 * DEG)
   }, [camera])
   return null
 }
 
 const DEFAULT_DEBUG = {
-  pos:  { x: '8.80',  y: '98.93', z: '-82.78' },
+  pos:  { x: '7.84',  y: '106.93', z: '-35.37' },
   rot:  { x: '0.0',   y: '0.0',   z: '0.0' },
   dir:  { x: '0.00',  y: '0.00',  z: '-1.00' },
   fov:  '50.0',
@@ -27,6 +28,7 @@ const DEFAULT_DEBUG = {
 }
 
 function App() {
+  const [booted, setBooted] = useState(false)
   const [debugVisible, setDebugVisible] = useState(false)
   const [panelVisible, setPanelVisible] = useState(false)
   const [debugInfo, setDebugInfo] = useState(DEFAULT_DEBUG)
@@ -47,13 +49,19 @@ function App() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
+  useEffect(() => {
+    const onClick = () => setBooted(true)
+    window.addEventListener('click', onClick, { once: true })
+    return () => window.removeEventListener('click', onClick)
+  }, [])
+
   const handleDebugUpdate = useCallback((info) => setDebugInfo(info), [])
   const handleCrosshairUpdate = useCallback((info) => setCrosshairInfo(info), [])
 
   return (
     <>
       <Canvas
-        camera={{ position: [8.80, 98.93, -82.78], fov: 50 }}
+        camera={{ position: [7.84, 106.93, -35.37], fov: 50 }}
         style={{ width: '100vw', height: '100vh', display: 'block' }}
         dpr={[1, 1.5]}
         performance={{ min: 0.5 }}
@@ -69,6 +77,7 @@ function App() {
         <DustParticles position={[8.65, 88, 8.65]} />
         <AdaptiveDpr pixelated />
         <CameraInit />
+        <ScreenDisplay booted={booted} />
         {debugVisible && <DebugTracker onUpdate={handleDebugUpdate} onCrosshairUpdate={handleCrosshairUpdate} />}
         {debugVisible && <DebugMovement />}
         <PointerLockControls />

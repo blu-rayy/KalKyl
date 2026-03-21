@@ -31,7 +31,7 @@ class KalKylLexer:
 
         self.regex = re.compile('|'.join('(?P<%s>%s)' % pair for pair in self.token_specs))
 
-    # Human-readable label for narratives
+    # Human-readable label for narratives/explainability layer
     def _label(self, kind):
         labels = {
             'BRACKET_OPEN':  'INITIATOR',
