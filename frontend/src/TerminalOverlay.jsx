@@ -218,7 +218,7 @@ function CompilerTerminal({ transcript, setTranscript, onGridReady }) {
     setGridLoading(true)
     playPrintSFX()
     try {
-      const res  = await fetch('http://localhost:8080/grid', {
+      const res  = await fetch(`${import.meta.env.VITE_API_BASE ?? ''}/api/grid`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: lastSrcRef.current }),
@@ -271,7 +271,7 @@ function CompilerTerminal({ transcript, setTranscript, onGridReady }) {
 
     setLoading(true)
     try {
-      const res  = await fetch('http://localhost:8080/compile', {
+      const res  = await fetch(`${import.meta.env.VITE_API_BASE ?? ''}/api/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: cmd }),

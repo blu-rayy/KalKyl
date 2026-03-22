@@ -3,18 +3,20 @@ import json
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'core'))
+ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, 'core'))
 from main import run, compile_for_grid
 
 
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        if self.path == '/compile':
+        if self.path == '/api/compile':
             length = int(self.headers['Content-Length'])
             body   = json.loads(self.rfile.read(length))
             result = run(body.get('source', ''))
             self._respond(200, {'output': result})
-        elif self.path == '/grid':
+        elif self.path == '/api/grid':
             length = int(self.headers['Content-Length'])
             body   = json.loads(self.rfile.read(length))
             try:

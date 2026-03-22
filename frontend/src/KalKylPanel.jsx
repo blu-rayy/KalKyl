@@ -10,7 +10,7 @@ export function KalKylPanel({ onClose }) {
     setLoading(true)
     setOutput('')
     try {
-      const res = await fetch('http://localhost:8080/compile', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE ?? ''}/api/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source }),
