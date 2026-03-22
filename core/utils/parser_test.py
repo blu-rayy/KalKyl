@@ -265,9 +265,9 @@ run(
 )
 
 run(
-    "Edge — missing delimiter (caught by lexer)",
+    "Edge — missing ']' auto-inserted by lexer Phrase-Level Recovery",
     "[ 10 => zahl R_out",
-    "FAIL"
+    "PASS"
 )
 
 run(
@@ -285,5 +285,159 @@ run(
 run(
     "Edge — multiple math operators in expression",
     "[ 10 + 2 * 3.5 / 2 - 1 => gleitkomma R_complex ]",
+    "PASS"
+)
+
+# =============================================================================
+# RECOVERY STRATEGIES — parser-level
+# =============================================================================
+
+run(
+    "Panic Mode — invalid symbol '$' skipped, assignment survives",
+    "[ 10 $ 5 => zahl Z_1 ]",
+    "PASS"
+)
+
+run(
+    "Panic Mode — multiple invalid symbols '$$' skipped",
+    "[ 10 $$ 5 => zahl Z_sum ]",
+    "PASS"
+)
+
+run(
+    "Phrase-Level Recovery — missing '[' before integer expression",
+    "42 => zahl Z_val ]",
+    "PASS"
+)
+
+run(
+    "Phrase-Level Recovery — missing '[' before float expression",
+    "9.81 => gleitkomma Z_gravity ]",
+    "PASS"
+)
+
+run(
+    "Phrase-Level Recovery — missing '[' before dimensional string",
+    '6*wort "KalKyl" => 6*wort R_name ]',
+    "PASS"
+)
+
+run(
+    "Phrase-Level Recovery + Panic Mode — missing '[' AND invalid symbol",
+    "10 @ 5 => zahl Z_sum ]",
+    "PASS"
+)
+
+run(
+    "Phrase-Level Recovery — missing ']' at end auto-inserted by lexer",
+    "[ 10 => zahl Z_val",
+    "PASS"
+)
+
+# =============================================================================
+# CONTROL STRUCTURES — body variants
+# =============================================================================
+
+run(
+    "Control wenn — body is an assignment expression",
+    "[ wenn Z_x > 0 -> 99 => zahl R_result ]",
+    "PASS"
+)
+
+run(
+    "Control wenn — body is a lese action",
+    "[ wenn V_ready == 1 -> lese => zahl V_next ]",
+    "PASS"
+)
+
+run(
+    "Control wenn — body is a bau instantiation",
+    "[ wenn Z_count > 0 -> bau V_Template => objekt Z_obj ]",
+    "PASS"
+)
+
+run(
+    "Control solange — body is an assignment with promotion",
+    "[ solange 1 < 10 -> 5 + 2.5 => gleitkomma R_val ]",
+    "PASS"
+)
+
+run(
+    "Control solange — body is a zeige action",
+    "[ solange V_i < 100 -> zeige R_output ]",
+    "PASS"
+)
+
+run(
+    "Control sonst — body is an assignment",
+    "[ sonst -> 0 => zahl R_default ]",
+    "PASS"
+)
+
+run(
+    "Control sonst — body is a lese action",
+    "[ sonst -> lese => wort V_fallback ]",
+    "PASS"
+)
+
+# =============================================================================
+# OBJECT-ORIENTED — bau variants
+# =============================================================================
+
+run(
+    "bau — target is R_ identifier (valid parse; semantics enforces routing)",
+    "[ bau V_Schema => objekt R_record ]",
+    "PASS"
+)
+
+run(
+    "bau — target is V_ identifier (valid parse; semantics enforces immutability)",
+    "[ bau V_Template => objekt V_instance ]",
+    "PASS"
+)
+
+run(
+    "bau — missing objekt keyword replaced with zahl (FAIL)",
+    "[ bau V_KrisBan => zahl Z_board ]",
+    "FAIL"
+)
+
+run(
+    "bau — missing source identifier (FAIL)",
+    "[ bau => objekt Z_board ]",
+    "FAIL"
+)
+
+# =============================================================================
+# MATHEMATICAL EXPRESSIONS — advanced parser checks
+# =============================================================================
+
+run(
+    "Math — parenthesised sub-expression parsed as valid expr tokens",
+    "[ (10 + 2) * 3 => zahl R_val ]",
+    "PASS"
+)
+
+run(
+    "Math — deep operator chain",
+    "[ 1 + 2 + 3 + 4 + 5 => zahl R_total ]",
+    "PASS"
+)
+
+run(
+    "Math — mixed relational and math into logik",
+    "[ Z_a + 1 >= Z_b => logik R_check ]",
+    "PASS"
+)
+
+run(
+    "Math — division present yields valid assignment structure",
+    "[ 10 / 4 => gleitkomma R_div ]",
+    "PASS"
+)
+
+run(
+    "Math — unary not (nicht) in expression",
+    "[ nicht wahr => logik R_inv ]",
     "PASS"
 )

@@ -274,6 +274,7 @@ class KalKylSemantics:
         # Find -> index
         arrow_idx = next((i for i, t in enumerate(inner) if t['type'] == 'ARROW_THEN'), -1)
         condition = inner[1:arrow_idx]
+        body      = inner[arrow_idx + 1:]
 
         # Check all identifiers in condition exist in symbol table
         for t in condition:
@@ -290,11 +291,39 @@ class KalKylSemantics:
             f"All operands resolved. Passing control to body."
         )
 
+        # Semantically analyze the body
+        if body:
+            narratives.append("[SEMANTICS] Analyzing control body...")
+            body_narr, body_status, symbol_table = self._analyze_control_body(body, symbol_table)
+            narratives.extend(body_narr)
+            if body_status == "FAIL":
+                return narratives, "FAIL", symbol_table
+
         flushed = symbol_table.scope_lock()
         if flushed:
             narratives.append("[SYSTEM] Scope Lock engaged; flushing temporary math registers.")
 
         return narratives, "PASS", symbol_table
+
+    def _analyze_control_body(self, body_tokens, symbol_table):
+        """Route control body tokens to the appropriate semantic handler."""
+        narr = []
+        if not body_tokens:
+            return narr, "PASS", symbol_table
+
+        first = body_tokens[0]['value']
+
+        if first == 'zeige':
+            return self._analyze_zeige(body_tokens, symbol_table, narr)
+        elif first == 'lese':
+            return self._analyze_lese(body_tokens, symbol_table, narr)
+        elif first == 'bau':
+            return self._analyze_bau(body_tokens, symbol_table, narr)
+        elif first == 'sonst':
+            narr.append("[SEMANTICS] 'sonst' branch acknowledged. No type validation required.")
+            return narr, "PASS", symbol_table
+        else:
+            return self._analyze_assignment(body_tokens, symbol_table, narr)
 
     # -------------------------------------------------------------------------
     # Type inference

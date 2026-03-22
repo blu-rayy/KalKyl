@@ -315,6 +315,7 @@ run(
 
 st_ctrl = KalKylSymbolTable()
 st_ctrl.bind('Z_count', 'zahl')
+st_ctrl.bind('R_done', 'logik')
 
 run(
     "wenn — valid condition, operands in symbol table",
@@ -332,6 +333,7 @@ run(
 
 st_while = KalKylSymbolTable()
 st_while.bind('V_count', 'zahl')
+st_while.bind('R_done', 'logik')
 
 run(
     "solange — valid condition",
@@ -384,3 +386,324 @@ print(f"\nSecond statement status: {status2}")
 print("Symbol table after second statement:")
 print(st_persist.display())
 print(f"\nResult  : {'PASS' if status2 == 'PASS' else 'FAIL -- unexpected result'}")
+
+# =============================================================================
+# RECOVERY STRATEGIES — full pipeline demonstrations
+# =============================================================================
+
+run(
+    "Panic Mode — multiple consecutive invalid symbols skipped, valid assignment survives",
+    "[ 10 $$ 5 => zahl Z_sum ]",
+    "PASS"
+)
+
+run(
+    "Panic Mode — invalid symbol between int and float, promotion still resolves",
+    "[ 10 @ 5.5 => gleitkomma R_result ]",
+    "PASS"
+)
+
+run(
+    "Panic Mode — lone invalid symbol in expression, no operands lost",
+    "[ 42 # => zahl Z_val ]",
+    "PASS"
+)
+
+run(
+    "Phrase-Level Recovery — missing '[' with float literal auto-inserted",
+    "3.14 => gleitkomma Z_pi ]",
+    "PASS"
+)
+
+run(
+    "Phrase-Level Recovery — missing '[' with dimensional string auto-inserted",
+    '5*wort "hello" => 5*wort R_word ]',
+    "PASS"
+)
+
+run(
+    "Phrase-Level Recovery + Panic Mode — missing '[' AND invalid symbol, both recovered",
+    "10 @ 5 => zahl Z_sum ]",
+    "PASS"
+)
+
+# =============================================================================
+# CONTROL STRUCTURES — advanced body variants
+# =============================================================================
+
+# wenn body is an assignment
+st_wenn_assign = KalKylSymbolTable()
+st_wenn_assign.bind('Z_x', 'zahl')
+
+run(
+    "wenn — body is an assignment (valid)",
+    "[ wenn Z_x > 0 -> 99 => zahl R_result ]",
+    "PASS",
+    fresh_table=False,
+    symbol_table=st_wenn_assign
+)
+
+# wenn body assignment has type mismatch
+st_wenn_fail = KalKylSymbolTable()
+st_wenn_fail.bind('Z_x', 'zahl')
+
+run(
+    "wenn — body assignment type mismatch (float into zahl slot)",
+    "[ wenn Z_x > 0 -> 3.14 => zahl R_result ]",
+    "FAIL",
+    fresh_table=False,
+    symbol_table=st_wenn_fail
+)
+
+# solange body is a lese action (numeric literals as condition — no ident lookup needed)
+run(
+    "solange — body is a lese action binding a new input channel",
+    "[ solange 1 < 10 -> lese => zahl V_next ]",
+    "PASS"
+)
+
+# solange body is an assignment with promotion
+run(
+    "solange — body assignment promotes int+float to gleitkomma",
+    "[ solange 1 < 10 -> 5 + 2.5 => gleitkomma R_val ]",
+    "PASS"
+)
+
+# wenn body is an assignment, R_ in condition guard
+st_wenn_r = KalKylSymbolTable()
+st_wenn_r.bind('V_limit', 'zahl')
+
+run(
+    "wenn — condition uses V_ identifier (valid operand in condition)",
+    "[ wenn V_limit >= 100 -> 0 => zahl R_capped ]",
+    "PASS",
+    fresh_table=False,
+    symbol_table=st_wenn_r
+)
+
+# sonst body is an assignment (sonst always passes without body analysis)
+run(
+    "sonst — body is an assignment (PASS; sonst body is unconditionally accepted)",
+    "[ sonst -> 0 => zahl R_default ]",
+    "PASS"
+)
+
+# =============================================================================
+# OBJECT-ORIENTED — bau instantiation chains
+# =============================================================================
+
+# Valid bau from a V_ class template
+st_bau_chain = KalKylSymbolTable()
+st_bau_chain.bind('V_Template', 'objekt')
+
+run(
+    "bau — instantiate object from V_ class template into Z_ scratchpad",
+    "[ bau V_Template => objekt Z_instance ]",
+    "PASS",
+    fresh_table=False,
+    symbol_table=st_bau_chain
+)
+
+# bau — target is a V_ identifier (immutability violation)
+st_bau_immut = KalKylSymbolTable()
+st_bau_immut.bind('V_Template', 'objekt')
+st_bau_immut.bind('V_frozen', 'objekt')   # V_ target is locked
+
+run(
+    "bau — target is V_ identifier (immutability violation)",
+    "[ bau V_Template => objekt V_frozen ]",
+    "FAIL",
+    fresh_table=False,
+    symbol_table=st_bau_immut
+)
+
+# bau — source class not bound
+run(
+    "bau — source class not in symbol table (unresolved reference)",
+    "[ bau V_Ghost => objekt Z_obj ]",
+    "FAIL"
+)
+
+# Simulated chain: lese → bau (two-step pipeline on shared table)
+st_lese_bau = KalKylSymbolTable()
+tokens_lese, _, _ = lexer.tokenize("[ lese => objekt V_Blueprint ]")
+_, _, rule_lese = parser.parse(tokens_lese)
+_, _, st_lese_bau = semantic.analyze(tokens_lese, rule_lese, st_lese_bau)
+
+print(f"\n{'='*60}")
+print("bau Chain — after lese binds V_Blueprint, bau instantiates from it")
+print("Symbol table after lese step:")
+print(st_lese_bau.display())
+
+run(
+    "bau Chain — V_Blueprint bound by lese, now bau instantiates Z_obj",
+    "[ bau V_Blueprint => objekt Z_obj ]",
+    "PASS",
+    fresh_table=False,
+    symbol_table=st_lese_bau
+)
+
+# =============================================================================
+# MATHEMATICAL EXPRESSIONS — advanced
+# =============================================================================
+
+run(
+    "Math — subtraction chain of integers stays zahl",
+    "[ 100 - 50 - 25 => zahl R_remain ]",
+    "PASS"
+)
+
+run(
+    "Math — multiplication of integers stays zahl",
+    "[ 6 * 7 => zahl R_product ]",
+    "PASS"
+)
+
+run(
+    "Math — integer multiplication result forced into gleitkomma (mismatch)",
+    "[ 6 * 7 => gleitkomma R_wrong ]",
+    "FAIL"
+)
+
+run(
+    "Math — three-term promotion: 1 + 2 + 3.0 promotes all to gleitkomma",
+    "[ 1 + 2 + 3.0 => gleitkomma R_sum ]",
+    "PASS"
+)
+
+run(
+    "Math — No-Loss Division Rule: int / int still yields gleitkomma",
+    "[ 8 / 2 => gleitkomma R_div ]",
+    "PASS"
+)
+
+run(
+    "Math — No-Loss Division Rule violation: division result forced into zahl",
+    "[ 8 / 2 => zahl R_div ]",
+    "FAIL"
+)
+
+run(
+    "Math — complex multi-operator (*, +, /) with mixed types",
+    "[ 10 * 2 + 5.0 / 2.5 => gleitkomma R_calc ]",
+    "PASS"
+)
+
+run(
+    "Math — negative-adjacent subtraction stays zahl",
+    "[ 1000 - 999 => zahl R_one ]",
+    "PASS"
+)
+
+# =============================================================================
+# UNIQUE KALKYL RULES — showcase
+# =============================================================================
+
+# Promotion Rule
+run(
+    "Promotion Rule — float * int promotes to gleitkomma",
+    "[ 3.0 * 4 => gleitkomma R_mul ]",
+    "PASS"
+)
+
+run(
+    "Promotion Rule — float alone assigned to gleitkomma",
+    "[ 9.99 => gleitkomma R_price ]",
+    "PASS"
+)
+
+# No-Loss Division Rule
+run(
+    "No-Loss Division Rule — 100 / 4 is gleitkomma not zahl",
+    "[ 100 / 4 => gleitkomma R_quarter ]",
+    "PASS"
+)
+
+# Dimensional String — exact match
+run(
+    "Dimensional String — exact 10-char match",
+    '[ 10*wort "HelloWorld" => 10*wort R_banner ]',
+    "PASS"
+)
+
+run(
+    "Dimensional String — declared 10, actual 5 chars (mismatch)",
+    '[ 10*wort "Hello" => 10*wort R_banner ]',
+    "FAIL"
+)
+
+run(
+    "Dimensional String — declared 1, actual 0 chars (empty string edge case)",
+    '[ 1*wort "" => 1*wort R_empty ]',
+    "FAIL"
+)
+
+# leer null compatibility
+run(
+    "leer — compatible with gleitkomma slot (null initializer)",
+    "[ leer => gleitkomma Z_uninit ]",
+    "PASS"
+)
+
+run(
+    "leer — compatible with objekt slot (null class reference)",
+    "[ leer => objekt Z_obj ]",
+    "PASS"
+)
+
+# R_ Result Routing Violation
+run(
+    "R_ Routing Violation — R_ identifier used as left-side expression operand",
+    "[ R_out * 2 => zahl Z_double ]",
+    "FAIL"
+)
+
+# V_ Immutability — first bind (allowed), then re-bind (blocked)
+run(
+    "V_ Immutability — first binding of V_ identifier is allowed",
+    "[ 42 => zahl V_const ]",
+    "PASS"
+)
+
+st_v_immut2 = KalKylSymbolTable()
+st_v_immut2.bind('V_const', 'zahl')
+
+run(
+    "V_ Immutability — re-assignment to already-bound V_ is blocked",
+    "[ 99 => zahl V_const ]",
+    "FAIL",
+    fresh_table=False,
+    symbol_table=st_v_immut2
+)
+
+# Raw string without m* prefix — double violation
+run(
+    "Double Violation — raw string into wort (missing m* prefix AND type mismatch)",
+    '[ "hello" => wort R_msg ]',
+    "FAIL"
+)
+
+run(
+    "Double Violation — raw string into gleitkomma (missing m* + wrong type)",
+    '[ "3.14" => gleitkomma R_pi ]',
+    "FAIL"
+)
+
+# Logic type inference
+run(
+    "Logic — boolean expression yields logik",
+    "[ wahr und falsch => logik R_gate ]",
+    "PASS"
+)
+
+run(
+    "Logic — boolean literal alone into logik",
+    "[ falsch => logik V_flag ]",
+    "PASS"
+)
+
+run(
+    "Logic — boolean literal forced into zahl (type mismatch)",
+    "[ wahr => zahl R_bad ]",
+    "FAIL"
+)

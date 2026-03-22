@@ -55,8 +55,28 @@
   50%       { opacity: 0; }
 }
 
+@keyframes kk-shake {
+  0%, 100% { transform: translateX(0) skewX(0); }
+  20%      { transform: translateX(-5px) skewX(-1.5deg); }
+  40%      { transform: translateX(5px)  skewX(1.5deg); }
+  60%      { transform: translateX(-3px) skewX(-0.5deg); }
+  80%      { transform: translateX(3px)  skewX(0.5deg); }
+}
+
+@keyframes kk-flicker {
+  0%, 100% { opacity: 1; }
+  25%      { opacity: 0.15; }
+  50%      { opacity: 0.85; }
+  75%      { opacity: 0.05; }
+}
+
 body {
   margin: 0;
+}
+
+/* Hide scrollbar in terminal transcript */
+div[style*="overflow-y: scroll"]::-webkit-scrollbar {
+  display: none;
 }
 
 #root {

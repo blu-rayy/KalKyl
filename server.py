@@ -4,7 +4,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'core'))
-from main import run
+from main import run, compile_for_grid
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -14,6 +14,16 @@ class Handler(BaseHTTPRequestHandler):
             body   = json.loads(self.rfile.read(length))
             result = run(body.get('source', ''))
             self._respond(200, {'output': result})
+        elif self.path == '/grid':
+            length = int(self.headers['Content-Length'])
+            body   = json.loads(self.rfile.read(length))
+            try:
+                text, grid = compile_for_grid(body.get('source', ''))
+            except Exception as e:
+                import traceback; traceback.print_exc()
+                self._respond(500, {'error': str(e), 'grid': None})
+                return
+            self._respond(200, {'output': text, 'grid': grid})
         else:
             self._respond(404, {'error': 'Not found'})
 
